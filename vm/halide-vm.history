@@ -1,0 +1,16 @@
+#V2
+00 01 03 E8
+.registers
+.run
+.registers
+.program
+01 01 03 E8 00
+.run
+.registers
+01 01 03 E8 00
+.run
+01 01 03 E8
+.run
+01 01 03 E8
+.run
+.dbg
