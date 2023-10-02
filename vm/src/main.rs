@@ -104,11 +104,9 @@ fn parse_input_to_bytes(input: &str, args: &Args) -> Result<Vec<u8>, Box<dyn Err
 
 fn parse_hex(input: &str) -> Result<Vec<u8>, ParseIntError> {
     let mut results: Vec<u8> = vec![];
-    for hex_string in input.split(" ") {
-        match u8::from_str_radix(&hex_string, 16) {
-            Ok(result) => {
-                results.push(result);
-            }
+    for hex_string in input.split(' ') {
+        match u8::from_str_radix(hex_string, 16) {
+            Ok(result) => results.push(result),
             Err(e) => {
                 return Err(e);
             }
