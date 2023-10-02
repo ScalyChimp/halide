@@ -1,10 +1,9 @@
 use chumsky::Parser;
-use opcodes::instructions::Instruction;
 use std::{error::Error, fs, num::ParseIntError, path::PathBuf};
+use vm::{opcode::instructions::Instruction, parsing::assemble, VM};
 
-use assembler::assemble;
 use clap::Parser as ArgParser;
-use vm::VM;
+
 #[derive(ArgParser)]
 struct Args {
     /// File path to bytecode
