@@ -16,15 +16,13 @@ pub fn assemble() -> impl Parser<char, Vec<Instruction>, Error = Simple<char>> {
     let op_halt = just("HLT").to(Instruction::Halt);
     let op_not = just("NOT").to(Instruction::Not);
 
-    let op_jmp = just("JMP")
-        .ignore_then(register)
-        .map(|x| Instruction::Jump(x));
+    let op_jmp = just("JMP").ignore_then(register).map(Instruction::Jump);
     let op_jmpf = just("JMPF")
         .ignore_then(register)
-        .map(|x| Instruction::JumpForward(x));
+        .map(Instruction::JumpForward);
     let op_jmpb = just("JMPB")
         .ignore_then(register)
-        .map(|x| Instruction::JumpBack(x));
+        .map(Instruction::JumpBack);
 
     let op_add = just("ADD")
         .ignore_then(register)
@@ -147,7 +145,8 @@ mod tests {
         assert_eq!(
             parser
                 .parse(
-                    r#"EQ $0 $1
+                    r#"
+                   EQ $0 $1
                    GT $1 $3
                    GTQ $2 $0
                    LOAD $2 #1"#,
@@ -158,6 +157,26 @@ mod tests {
                 Instruction::GreaterThan(1, 3),
                 Instruction::GreaterThanEqual(2, 0),
                 Instruction::Load(2, 1),
+            ]
+        );
+    }
+
+    #[test]
+    fn load_multiple_bytes() {
+        let parse = assemble();
+
+        assert_eq!(
+            parse
+                .parse(
+                    "LOAD $0 #9
+                     LOAD $1 #10
+                     LOAD $2 #100"
+                )
+                .unwrap(),
+            vec![
+                Instruction::Load(0, 9),
+                Instruction::Load(1, 10),
+                Instruction::Load(2, 100)
             ]
         );
     }

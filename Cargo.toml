@@ -3,7 +3,7 @@
 resolver = "2"
 members = [
         'vm',
-        'compiler',
+        # 'compiler',
         'assembler',
         'opcodes',
 ]

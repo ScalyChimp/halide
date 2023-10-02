@@ -1,25 +1,31 @@
+use chumsky::Parser;
+use opcodes::instructions::Instruction;
 use std::{error::Error, fs, num::ParseIntError, path::PathBuf};
 
-use clap::Parser;
+use assembler::assemble;
+use clap::Parser as ArgParser;
 use vm::VM;
-#[derive(Parser)]
+#[derive(ArgParser)]
 struct Args {
     /// File path to bytecode
     /// If ommitted, starts a repl.
     #[arg(short, long, value_name = "BYTECODE")]
     script: Option<PathBuf>,
+
+    #[arg(short, long)]
+    raw_hex: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     match args.script {
         Some(script) => run_bytecode(script)?,
-        None => repl()?,
+        None => repl(args)?,
     }
     Ok(())
 }
 
-fn repl() -> Result<(), Box<dyn Error>> {
+fn repl(args: Args) -> Result<(), Box<dyn Error>> {
     let mut rl = rustyline::config()?;
 
     println!("halide-vm repl v0.0.1");
@@ -53,17 +59,17 @@ fn repl() -> Result<(), Box<dyn Error>> {
                         println!("buh-bye!");
                         std::process::exit(0);
                     }
-                    input => match parse_hex(input) {
+                    input => match parse_input_to_bytes(input, &args) {
                         Ok(hex) => {
                             print!("Loading hex: ");
-                            for byte in &hex {
+                            for byte in hex.iter() {
                                 print!("{:#04X} ", byte);
                             }
                             println!();
                             vm.program = hex;
                         }
                         Err(err) => {
-                            eprintln!("invalid input: {}", err);
+                            eprintln!("invalid input: {:?}", err);
                         }
                     },
                 }
@@ -80,6 +86,19 @@ fn repl() -> Result<(), Box<dyn Error>> {
             }
             Err(ref err) => print!("Err: {}", err),
         }
+    }
+}
+
+fn parse_input_to_bytes(input: &str, args: &Args) -> Result<Vec<u8>, Box<dyn Error>> {
+    if args.raw_hex {
+        Ok(parse_hex(input)?)
+    } else {
+        let instr = assemble().parse(input).unwrap();
+
+        dbg!(&instr);
+        let mapped: Vec<_> = instr.into_iter().map(Instruction::to_bytes).collect();
+        dbg!(&mapped);
+        Ok(mapped.into_iter().flatten().collect())
     }
 }
 

@@ -102,8 +102,8 @@ pub mod instructions {
     }
 
     pub(super) fn to_le_bytes(v: i16) -> (u8, u8) {
-        let first = (v >> 8) as u8;
-        let second = (v & 0x0F) as u8;
+        let first = ((v & 0xFF00u16 as i16) >> 8) as u8;
+        let second = (v & 0x00FF) as u8;
         (first, second)
     }
 }
@@ -119,7 +119,13 @@ mod tests {
         let value = 0b00000010_00000011;
         assert_eq!(to_le_bytes(value), (0b00000010u8, 0b00000011u8));
         let value = 2;
-        assert_eq!(to_le_bytes(value), (0u8, 2))
+        assert_eq!(to_le_bytes(value), (0u8, 2));
+    }
+
+    #[test]
+    fn byte_splitting_two_bytes() {
+        let value = 16;
+        assert_eq!(to_le_bytes(value), (0u8, 16));
     }
 
     macro_rules! byte_check {
@@ -145,6 +151,7 @@ mod tests {
         byte_check!(JumpBack(0) => [8,0]);
 
         byte_check!(Load(0, 2) => [1, 0, 0, 2]);
+        byte_check!(Load(1, 19) => [1, 1, 0, 19]);
 
         byte_check!(Equal(0, 2) => [9, 0, 2]);
         byte_check!(GreaterThan(0, 2) => [11, 0, 2]);

@@ -52,7 +52,7 @@ impl VM {
 
             Opcode::LOAD => {
                 let dest = self.next_byte() as usize;
-                let val = self.next_2_bytes() as i32; // i16 gets interpreted as i32
+                let val = self.next_value() as i32; // i16 gets interpreted as i32
 
                 self.registers[dest] = val;
             }
@@ -127,8 +127,8 @@ impl VM {
         byte
     }
 
-    fn next_2_bytes(&mut self) -> u16 {
-        ((self.next_byte() as u16) << 8) | self.next_byte() as u16
+    fn next_value(&mut self) -> i16 {
+        ((((self.next_byte() as u16) << 8) | self.next_byte() as u16) as u16) as i16
     }
 
     fn decode_opcode(&mut self) -> Opcode {
@@ -163,19 +163,29 @@ mod tests {
     fn grab_2_bytes() {
         let mut vm = VM::with_program(vec![20, 66, 4, 8]);
 
-        assert_eq!(vm.next_2_bytes(), 5186u16);
+        assert_eq!(vm.next_value(), 5186i16);
         assert_eq!(vm.pc, 2);
 
-        assert_eq!(vm.next_2_bytes(), 1032u16);
+        assert_eq!(vm.next_value(), 1032i16);
         assert_eq!(vm.pc, 4);
     }
 
     #[test]
     fn opcode_load() {
-        let mut vm = VM::with_program(vec![Opcode::LOAD.into(), 0, 0b0000000, 0b00000001]); // load (1) into register (0) the value 1_i32
+        let mut vm = VM::with_program(vec![
+            Opcode::LOAD.into(),
+            0,
+            0b0000000,
+            0b00000001,
+            Opcode::LOAD.into(),
+            1,
+            1,
+            0,
+        ]); // load (1) into register (0) the value 1_i32
         vm.run();
         dbg!(&vm);
-        assert_eq!(vm.registers[0], 1i32)
+        assert_eq!(vm.registers[0], 1i32);
+        assert_eq!(vm.registers[1], 256i32);
     }
 
     #[test]
