@@ -39,11 +39,52 @@ pub fn compile_expr(expr: Expr, mut next_register: u8) -> Vec<Instr> {
             results.append(&mut compile_expr(*a, next_register));
             next_register += 1;
             results.append(&mut compile_expr(*b, next_register));
+            results.push(Instr::Add(
+                next_register - 1,
+                next_register,
+                next_register - 1,
+            ))
         }
-        Expr::Sub(_, _) => todo!(),
-        Expr::Mul(_, _) => todo!(),
-        Expr::Div(_, _) => todo!(),
-        Expr::Pow(_, _) => todo!(),
+        Expr::Sub(a, b) => {
+            results.append(&mut compile_expr(*a, next_register));
+            next_register += 1;
+            results.append(&mut compile_expr(*b, next_register));
+            results.push(Instr::Subtract(
+                next_register - 1,
+                next_register,
+                next_register - 1,
+            ))
+        }
+        Expr::Mul(a, b) => {
+            results.append(&mut compile_expr(*a, next_register));
+            next_register += 1;
+            results.append(&mut compile_expr(*b, next_register));
+            results.push(Instr::Multiply(
+                next_register - 1,
+                next_register,
+                next_register - 1,
+            ))
+        }
+        Expr::Div(a, b) => {
+            results.append(&mut compile_expr(*a, next_register));
+            next_register += 1;
+            results.append(&mut compile_expr(*b, next_register));
+            results.push(Instr::Divide(
+                next_register - 1,
+                next_register,
+                next_register - 1,
+            ))
+        }
+        Expr::Pow(a, b) => {
+            results.append(&mut compile_expr(*a, next_register));
+            next_register += 1;
+            results.append(&mut compile_expr(*b, next_register));
+            results.push(Instr::Power(
+                next_register - 1,
+                next_register,
+                next_register - 1,
+            ))
+        }
     }
 
     results
@@ -60,8 +101,21 @@ mod tests {
         };
     }
     #[test]
-    fn compile_simple() {
+    fn compile_load() {
         compile_eq!(Expr::Int(2) => vec![Instr::Load(0, 2)]);
+    }
+
+    #[test]
+    fn compile_negate() {
         compile_eq!(Expr::Negate(Box::new(Expr::Int(2))) => vec![Instr::Load(0, 2), Instr::Load(1, -1), Instr::Multiply(0, 1, 0)])
+    }
+
+    #[test]
+    fn compile_binop() {
+        compile_eq!(Expr::Add(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Add(0, 1, 0) ]);
+        compile_eq!(Expr::Sub(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Subtract(0, 1, 0) ]);
+        compile_eq!(Expr::Mul(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Multiply(0, 1, 0) ]);
+        compile_eq!(Expr::Div(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Divide(0, 1, 0) ]);
+        compile_eq!(Expr::Pow(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Power(0, 1, 0) ]);
     }
 }

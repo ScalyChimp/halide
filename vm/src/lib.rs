@@ -132,6 +132,14 @@ impl VM {
 
                 self.cmp = rhs >= lhs;
             }
+            Opcode::POW => {
+                let rhs = self.registers[self.next_byte() as usize];
+                let lhs = self.registers[self.next_byte() as usize];
+
+                let dest = self.next_byte() as usize;
+
+                self.registers[dest] = rhs.pow(lhs.try_into().unwrap());
+            }
         }
         false
     }
@@ -389,6 +397,7 @@ mod tests {
         assert_eq!(vm.cmp, true);
         vm.step();
         vm.step();
+        dbg!(&vm);
         vm.step();
         assert_eq!(vm.cmp, false);
     }
