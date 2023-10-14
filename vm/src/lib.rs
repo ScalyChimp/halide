@@ -5,13 +5,25 @@ pub mod parsing;
 
 use opcode::Opcode;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct VM {
-    pub registers: [i32; 32],
+    pub registers: [i32; 256],
     pc: usize,
     pub program: Vec<u8>,
     remainder: u32,
     cmp: bool,
+}
+
+impl Default for VM {
+    fn default() -> Self {
+        Self {
+            registers: [0; 256],
+            pc: Default::default(),
+            program: Default::default(),
+            remainder: Default::default(),
+            cmp: Default::default(),
+        }
+    }
 }
 
 impl VM {
@@ -131,7 +143,7 @@ impl VM {
     }
 
     fn next_value(&mut self) -> i32 {
-        (((self.next_byte() as u16) << 8) | self.next_byte() as u16) as i32
+        (((self.next_byte() as u16) << 8) | self.next_byte() as u16) as i16 as i32
     }
 
     fn decode_opcode(&mut self) -> Opcode {
@@ -148,7 +160,7 @@ mod tests {
     fn init_vm() {
         let vm = VM::default();
 
-        assert_eq!(vm.registers, [0; 32]);
+        assert_eq!(vm.registers, [0; 256]);
     }
 
     #[test]
@@ -183,11 +195,16 @@ mod tests {
             1,
             1,
             0,
-        ]); // load (1) into register (0) the value 1_i32
+            Opcode::LOAD.into(),
+            2,
+            255,
+            255,
+        ]);
         vm.run();
         dbg!(&vm);
         assert_eq!(vm.registers[0], 1i32);
         assert_eq!(vm.registers[1], 256i32);
+        assert_eq!(vm.registers[2], -1i32);
     }
 
     #[test]

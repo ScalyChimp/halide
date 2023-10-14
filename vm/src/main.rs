@@ -1,6 +1,6 @@
 use chumsky::Parser;
 use std::{error::Error, fs, num::ParseIntError, path::PathBuf};
-use vm::{opcode::instructions::Instruction, parsing::assemble, VM};
+use vm::{opcode::instructions::Instr, parsing::assemble, VM};
 
 use clap::Parser as ArgParser;
 
@@ -41,17 +41,18 @@ fn repl(args: Args) -> Result<(), Box<dyn Error>> {
                 match line.as_str() {
                     ".step" => vm.step(),
                     ".run" => vm.run(),
+                    ".clear" => vm.program = vec![],
 
                     ".dbg" => {
                         println!("Full VM state:");
                         dbg!(&vm);
                     }
                     ".registers" => {
-                        println!("Registers: ");
-                        println!("{:#?}", vm.registers)
+                        print!("Registers: ");
+                        println!("{:?}", vm.registers)
                     }
                     ".program" => {
-                        println!("Program: ");
+                        print!("Program: ");
                         println!("{:#?}", vm.program)
                     }
                     ".quit" => {
@@ -59,13 +60,13 @@ fn repl(args: Args) -> Result<(), Box<dyn Error>> {
                         std::process::exit(0);
                     }
                     input => match parse_input_to_bytes(input, &args) {
-                        Ok(hex) => {
+                        Ok(mut hex) => {
                             print!("Loading hex: ");
                             for byte in hex.iter() {
                                 print!("{:#04X} ", byte);
                             }
                             println!();
-                            vm.program = hex;
+                            vm.program.append(&mut hex);
                         }
                         Err(err) => {
                             eprintln!("invalid input: {:?}", err);
@@ -95,7 +96,7 @@ fn parse_input_to_bytes(input: &str, args: &Args) -> Result<Vec<u8>, Box<dyn Err
         let instr = assemble().parse(input).unwrap();
 
         dbg!(&instr);
-        let mapped: Vec<_> = instr.into_iter().map(Instruction::to_bytes).collect();
+        let mapped: Vec<_> = instr.into_iter().map(Instr::to_bytes).collect();
         dbg!(&mapped);
         Ok(mapped.into_iter().flatten().collect())
     }

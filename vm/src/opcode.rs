@@ -58,7 +58,7 @@ pub mod instructions {
     type Value = i16;
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    pub enum Instruction {
+    pub enum Instr {
         Halt,
         Load(Register, Value),
         Add(Register, Register, Register),
@@ -75,10 +75,10 @@ pub mod instructions {
         Illegal,
     }
 
-    impl Instruction {
+    impl Instr {
         pub fn to_bytes(self) -> Vec<u8> {
             use super::Opcode::*;
-            use Instruction::*;
+            use Instr::*;
             match self {
                 Halt => vec![HLT.into()],
                 Load(r, v) => vec![LOAD.into(), r, to_le_bytes(v).0, to_le_bytes(v).1],
@@ -107,7 +107,7 @@ pub mod instructions {
     #[cfg(test)]
     mod tests {
         use crate::opcode::instructions::to_le_bytes;
-        use crate::opcode::instructions::Instruction;
+        use crate::opcode::instructions::Instr;
 
         #[test]
         fn byte_splitting() {
@@ -136,7 +136,7 @@ pub mod instructions {
 
         #[test]
         fn instructions_to_bytes() {
-            use Instruction::*;
+            use Instr::*;
             byte_check!(Halt => 0);
             byte_check!(Not => 10);
             byte_check!(Illegal => 255);
