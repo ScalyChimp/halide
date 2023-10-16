@@ -13,14 +13,13 @@ pub enum Opcode {
     POW = 6,
 
     JMP = 7,
-    JMPF = 8,
-    JMPB = 9,
+    JMPIF = 8,
 
-    EQ = 10,
-    NOT = 11,
+    EQ = 9,
+    NOT = 10,
 
-    GT = 12,
-    GTQ = 13,
+    GT = 11,
+    GTQ = 12,
 
     IGL = 255,
 }
@@ -37,12 +36,11 @@ impl From<u8> for Opcode {
             5 => DIV,
             6 => POW,
             7 => JMP,
-            8 => JMPF,
-            9 => JMPB,
-            10 => EQ,
-            11 => NOT,
-            12 => GT,
-            13 => GTQ,
+            8 => JMPIF,
+            9 => EQ,
+            10 => NOT,
+            11 => GT,
+            12 => GTQ,
 
             _ => IGL,
         }
@@ -69,8 +67,7 @@ pub mod instructions {
         Divide(Register, Register, Register),
         Power(Register, Register, Register),
         Jump(Register),
-        JumpForward(Register),
-        JumpBack(Register),
+        JumpIf(Register),
         Equal(Register, Register),
         Not,
         GreaterThan(Register, Register),
@@ -91,8 +88,7 @@ pub mod instructions {
                 Divide(r1, r2, dr) => vec![DIV.into(), r1, r2, dr],
                 Power(r1, r2, dr) => vec![POW.into(), r1, r2, dr],
                 Jump(r1) => vec![JMP.into(), r1],
-                JumpBack(r1) => vec![JMPB.into(), r1],
-                JumpForward(r1) => vec![JMPF.into(), r1],
+                JumpIf(r1) => vec![JMPIF.into(), r1],
                 Equal(r1, r2) => vec![EQ.into(), r1, r2],
                 Not => vec![NOT.into()],
                 GreaterThan(r1, r2) => vec![GT.into(), r1, r2],
@@ -142,19 +138,18 @@ pub mod instructions {
         fn instructions_to_bytes() {
             use Instr::*;
             byte_check!(Halt => 0);
-            byte_check!(Not => 11);
+            byte_check!(Not => 10);
             byte_check!(Illegal => 255);
 
-            byte_check!(Jump(0) => [7,0]);
-            byte_check!(JumpForward(0) => [8,0]);
-            byte_check!(JumpBack(0) => [9,0]);
+            byte_check!(Jump(0) => [7, 0]);
+            byte_check!(JumpIf(1) => [8, 1]);
 
             byte_check!(Load(0, 2) => [1, 0, 0, 2]);
             byte_check!(Load(1, 19) => [1, 1, 0, 19]);
 
-            byte_check!(Equal(0, 2) => [10, 0, 2]);
-            byte_check!(GreaterThan(0, 2) => [12, 0, 2]);
-            byte_check!(GreaterThanEqual(0, 2) => [13, 0, 2]);
+            byte_check!(Equal(0, 2) => [9, 0, 2]);
+            byte_check!(GreaterThan(0, 2) => [11, 0, 2]);
+            byte_check!(GreaterThanEqual(0, 2) => [12, 0, 2]);
 
             byte_check!(Add(0, 1, 2) => [2, 0, 1, 2]);
             byte_check!(Subtract(0, 1, 2) => [3, 0, 1, 2]);

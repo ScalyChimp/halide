@@ -23,8 +23,7 @@ pub fn assemble() -> impl Parser<char, Vec<Instr>, Error = Simple<char>> {
     let op_not = just("NOT").to(Instr::Not);
 
     let op_jmp = just("JMP").ignore_then(register).map(Instr::Jump);
-    let op_jmpf = just("JMPF").ignore_then(register).map(Instr::JumpForward);
-    let op_jmpb = just("JMPB").ignore_then(register).map(Instr::JumpBack);
+    let op_jmpif = just("JMPIF").ignore_then(register).map(Instr::JumpIf);
 
     let op_add = just("ADD")
         .ignore_then(register)
@@ -66,8 +65,8 @@ pub fn assemble() -> impl Parser<char, Vec<Instr>, Error = Simple<char>> {
         .map(|(r, v)| Instr::Load(r, v));
 
     let opcodes = choice((
-        op_halt, op_not, op_jmp, op_jmpf, op_jmpb, op_add, op_sub, op_mul, op_div, op_eq, op_gt,
-        op_gtq, op_load,
+        op_halt, op_not, op_jmp, op_jmpif, op_add, op_sub, op_mul, op_div, op_eq, op_gt, op_gtq,
+        op_load,
     ))
     .then_ignore(just('\n').or_not());
     opcodes.padded().repeated()
@@ -100,10 +99,8 @@ mod tests {
 
         let result = parser.parse("JMP $0").unwrap();
         assert_eq!(result, vec![Instr::Jump(0)]);
-        let result = parser.parse("JMPF $1").unwrap();
-        assert_eq!(result, vec![Instr::JumpForward(1)]);
-        let result = parser.parse("JMPB $2").unwrap();
-        assert_eq!(result, vec![Instr::JumpBack(2)]);
+        let result = parser.parse("JMPIF $1").unwrap();
+        assert_eq!(result, vec![Instr::JumpIf(1)]);
     }
 
     #[test]
@@ -113,12 +110,13 @@ mod tests {
         assert_eq!(
             parser
                 .parse(
-                    r#"JMPB $2
-                   JMPF $1
-                   JMP $0"#,
+                    r#"
+                   JMP $2
+                   JMPIF $1
+                   "#,
                 )
                 .unwrap(),
-            vec![Instr::JumpBack(2), Instr::JumpForward(1), Instr::Jump(0)]
+            vec![Instr::Jump(2), Instr::JumpIf(1)]
         );
     }
 

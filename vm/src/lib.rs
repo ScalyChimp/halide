@@ -55,14 +55,11 @@ impl VM {
                 let target = self.registers[self.next_byte() as usize];
                 self.pc = target as usize;
             }
-            Opcode::JMPF => {
-                let target = self.registers[self.next_byte() as usize];
-                self.pc += target as usize;
-            }
-            Opcode::JMPB => {
-                let target = self.registers[self.next_byte() as usize];
-                dbg!(target, self.pc);
-                self.pc -= target as usize;
+            Opcode::JMPIF => {
+                if self.cmp {
+                    let target = self.registers[self.next_byte() as usize];
+                    self.pc = target as usize;
+                }
             }
 
             Opcode::LOAD => {
@@ -324,44 +321,33 @@ mod tests {
     }
 
     #[test]
-    fn opcode_jmpb() {
+    fn opcode_jmpif() {
         let mut vm = VM::with_program(vec![
             Opcode::LOAD.into(),
             0,
             0,
-            2,
-            Opcode::LOAD.into(),
-            1,
-            0,
-            1,
-            Opcode::JMPB.into(),
-            1,
-        ]);
-        vm.step();
-        vm.step();
-        assert_eq!(vm.pc, 8);
-        vm.step();
-        assert_eq!(vm.pc, 9);
-    }
-
-    #[test]
-    fn opcode_jmpf() {
-        let mut vm = VM::with_program(vec![
+            3,
             Opcode::LOAD.into(),
             1,
             0,
             2,
-            Opcode::JMPF.into(),
+            Opcode::GT.into(),
+            0,
             1,
-            Opcode::LOAD.into(),
+            Opcode::JMPIF.into(),
             0,
-            0,
-            2,
         ]);
         vm.step();
         assert_eq!(vm.pc, 4);
         vm.step();
         assert_eq!(vm.pc, 8);
+
+        vm.step();
+        assert_eq!(vm.pc, 11);
+        assert!(vm.cmp);
+
+        vm.step();
+        assert_eq!(vm.pc, 3);
     }
 
     #[test]
