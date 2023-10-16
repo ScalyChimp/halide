@@ -15,17 +15,36 @@ pub fn expr() -> impl Parser<char, Expr, Error = Simple<char>> {
             .then(atom)
             .foldr(|_, rhs| Expr::Negate(Box::new(rhs)));
 
-        negated
+        let op = |op, f| one_of(op).to(f).padded();
+
+        let expo = negated
             .clone()
-            .then(one_of("+-*/^").padded().then(negated).repeated())
-            .foldl(|rhs, (op, lhs)| match op {
-                '+' => Expr::Add(Box::new(rhs), Box::new(lhs)),
-                '-' => Expr::Sub(Box::new(rhs), Box::new(lhs)),
-                '*' => Expr::Mul(Box::new(rhs), Box::new(lhs)),
-                '/' => Expr::Div(Box::new(rhs), Box::new(lhs)),
-                '^' => Expr::Pow(Box::new(rhs), Box::new(lhs)),
-                _ => unreachable!(),
-            })
+            .then(
+                op("^", Expr::Pow as fn(_, _) -> _)
+                    .then(negated.clone())
+                    .repeated(),
+            )
+            .foldl(|rhs, (op, lhs)| op(Box::new(rhs), Box::new(lhs)));
+
+        let product = expo
+            .clone()
+            .then(
+                op("*", Expr::Mul as fn(_, _) -> _)
+                    .or(op("/", Expr::Div as fn(_, _) -> _))
+                    .then(expo.clone())
+                    .repeated(),
+            )
+            .foldl(|rhs, (op, lhs)| op(Box::new(rhs), Box::new(lhs)));
+
+        product
+            .clone()
+            .then(
+                op("+", Expr::Add as fn(_, _) -> _)
+                    .or(op("-", Expr::Sub as fn(_, _) -> _))
+                    .then(product.clone())
+                    .repeated(),
+            )
+            .foldl(|rhs, (op, lhs)| op(Box::new(rhs), Box::new(lhs)))
     })
 }
 
@@ -128,6 +147,11 @@ mod tests {
             "2 / (8 - 4)" =>
             vec![Expr::Div(Box::new(Expr::Int(2)), Box::new(Expr::Sub(Box::new(Expr::Int(8)), Box::new(Expr::Int(4)))))]
         )
+    }
+
+    #[test]
+    fn parse_precedence() {
+        parse_exprs_eq!("2 + 4 * 3" => vec![Add(Box::new(Int(2)), Box::new(Mul(Box::new(Int(4)), Box::new(Int(3)))))]);
     }
 
     #[test]
