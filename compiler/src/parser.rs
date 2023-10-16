@@ -65,6 +65,7 @@ fn multiple_exprs() -> impl Parser<char, Vec<Expr>, Error = Simple<char>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use Expr::*;
 
     macro_rules! parse_expr_eq {
         ($in:expr => $out:expr) => {
@@ -86,27 +87,27 @@ mod tests {
 
     #[test]
     fn parse_one_expr() {
-        parse_expr_eq!("1" => Expr::Int(1));
-        parse_expr_eq!("23" => Expr::Int(23));
+        parse_expr_eq!("1" => Int(1));
+        parse_expr_eq!("23" => Int(23));
     }
 
     #[test]
     fn parse_one_negated() {
-        parse_expr_eq!("-1" => Expr::Negate(Box::new(Expr::Int(1))))
+        parse_expr_eq!("-1" => Negate(Box::new(Int(1))))
     }
 
     #[test]
     fn parse_group_negated() {
-        parse_expr_eq!("-(1 + 3)" => Expr::Negate(Box::new(Expr::Add(Box::new(Expr::Int(1)), Box::new(Expr::Int(3))))))
+        parse_expr_eq!("-(1 + 3)" => Negate(Box::new(Add(Box::new(Int(1)), Box::new(Int(3))))))
     }
 
     #[test]
     fn parse_one_binop() {
-        parse_expr_eq!("1 + 1" => Expr::Add(Box::new(Expr::Int(1)), Box::new(Expr::Int(1)),));
-        parse_expr_eq!("1 - 1" => Expr::Sub(Box::new(Expr::Int(1)), Box::new(Expr::Int(1)),));
-        parse_expr_eq!("1 * 1" => Expr::Mul(Box::new(Expr::Int(1)), Box::new(Expr::Int(1)),));
-        parse_expr_eq!("1 / 1" => Expr::Div(Box::new(Expr::Int(1)), Box::new(Expr::Int(1)),));
-        parse_expr_eq!("1 ^ 1" => Expr::Pow(Box::new(Expr::Int(1)), Box::new(Expr::Int(1)),));
+        parse_expr_eq!("1 + 1" => Add(Box::new(Int(1)), Box::new(Int(1)),));
+        parse_expr_eq!("1 - 1" => Sub(Box::new(Int(1)), Box::new(Int(1)),));
+        parse_expr_eq!("1 * 1" => Mul(Box::new(Int(1)), Box::new(Int(1)),));
+        parse_expr_eq!("1 / 1" => Div(Box::new(Int(1)), Box::new(Int(1)),));
+        parse_expr_eq!("1 ^ 1" => Pow(Box::new(Int(1)), Box::new(Int(1)),));
     }
 
     #[test]
@@ -114,9 +115,9 @@ mod tests {
         parse_exprs_eq!(
             "1 2 3" =>
             vec![
-                Expr::Int(1),
-                Expr::Int(2),
-                Expr::Int(3),
+                Int(1),
+                Int(2),
+                Int(3),
             ]
         )
     }
@@ -127,8 +128,8 @@ mod tests {
             "1 + 3
              2 / 3" =>
             vec![
-                Expr::Add(Box::new(Expr::Int(1)), Box::new(Expr::Int(3))),
-                Expr::Div(Box::new(Expr::Int(2)), Box::new(Expr::Int(3)))
+                Add(Box::new(Int(1)), Box::new(Int(3))),
+                Div(Box::new(Int(2)), Box::new(Int(3)))
             ]
         )
     }
@@ -137,7 +138,7 @@ mod tests {
     fn parse_nested_binop() {
         parse_exprs_eq!(
             "2 / 8 - 4" =>
-            vec![Expr::Sub(Box::new(Expr::Div(Box::new(Expr::Int(2)), Box::new(Expr::Int(8)))), Box::new(Expr::Int(4)))]
+            vec![Sub(Box::new(Div(Box::new(Int(2)), Box::new(Int(8)))), Box::new(Int(4)))]
         )
     }
 
@@ -145,7 +146,7 @@ mod tests {
     fn parse_bracket() {
         parse_exprs_eq!(
             "2 / (8 - 4)" =>
-            vec![Expr::Div(Box::new(Expr::Int(2)), Box::new(Expr::Sub(Box::new(Expr::Int(8)), Box::new(Expr::Int(4)))))]
+            vec![Div(Box::new(Int(2)), Box::new(Sub(Box::new(Int(8)), Box::new(Int(4)))))]
         )
     }
 
