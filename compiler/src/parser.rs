@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 use chumsky::prelude::*;
-use compiler::{Ast, Expr};
 
-fn parse_expr() -> impl Parser<char, Expr, Error = Simple<char>> {
+use crate::{Ast, Expr};
+
+pub fn expr() -> impl Parser<char, Expr, Error = Simple<char>> {
     recursive(|expr| {
         let int = text::int(10).from_str().unwrapped().map(Expr::Int);
 
@@ -14,7 +15,7 @@ fn parse_expr() -> impl Parser<char, Expr, Error = Simple<char>> {
             .then(atom)
             .foldr(|_, rhs| Expr::Negate(Box::new(rhs)));
 
-        let binary_expr = negated
+        negated
             .clone()
             .then(one_of("+-*/^").padded().then(negated).repeated())
             .foldl(|rhs, (op, lhs)| match op {
@@ -24,26 +25,22 @@ fn parse_expr() -> impl Parser<char, Expr, Error = Simple<char>> {
                 '/' => Expr::Div(Box::new(rhs), Box::new(lhs)),
                 '^' => Expr::Pow(Box::new(rhs), Box::new(lhs)),
                 _ => unreachable!(),
-            });
-
-        binary_expr
+            })
     })
 }
 
 fn parse_decl() -> impl Parser<char, Ast, Error = Simple<char>> {
-    let expr = parse_expr();
+    let expr = expr();
 
-    let decl = text::ident()
+    text::ident()
         .padded()
         .then_ignore(just("=").padded())
         .then(expr)
-        .map(|(ident, expr)| Ast::Let { ident, value: expr });
-
-    decl
+        .map(|(ident, expr)| Ast::Let { ident, value: expr })
 }
 
-fn parse_multiple_expr() -> impl Parser<char, Vec<Expr>, Error = Simple<char>> {
-    parse_expr().padded().repeated()
+fn multiple_exprs() -> impl Parser<char, Vec<Expr>, Error = Simple<char>> {
+    expr().padded().repeated()
 }
 
 #[cfg(test)]
@@ -52,13 +49,13 @@ mod tests {
 
     macro_rules! parse_expr_eq {
         ($in:expr => $out:expr) => {
-            assert_eq!(parse_expr().parse($in).unwrap(), $out)
+            assert_eq!(expr().parse($in).unwrap(), $out)
         };
     }
 
     macro_rules! parse_exprs_eq {
         ($in:expr => $out:expr) => {
-            assert_eq!(parse_multiple_expr().parse($in).unwrap(), $out)
+            assert_eq!(multiple_exprs().parse($in).unwrap(), $out)
         };
     }
 

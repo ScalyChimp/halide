@@ -1,5 +1,7 @@
 use vm::opcode::instructions::Instr;
 
+pub mod parser;
+
 type Int = i16;
 
 #[derive(Debug, Eq, Clone, PartialEq)]
@@ -93,29 +95,47 @@ pub fn compile_expr(expr: Expr, mut next_register: u8) -> Vec<Instr> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use vm::opcode::instructions::Instr;
+    use chumsky::Parser;
+    use vm::opcode::instructions::Instr::*;
 
     macro_rules! compile_eq {
         ($in:expr => $out:expr) => {
             assert_eq!(compile_expr($in, 0), $out)
         };
     }
+
+    macro_rules! compile_str_eq {
+        ($in:expr => $out:expr) => {
+            assert_eq!(compile_expr(parser::expr().parse($in).unwrap(), 0), $out)
+        };
+    }
     #[test]
     fn compile_load() {
-        compile_eq!(Expr::Int(2) => vec![Instr::Load(0, 2)]);
+        compile_eq!(Expr::Int(2) => vec![Load(0, 2)]);
     }
 
     #[test]
     fn compile_negate() {
-        compile_eq!(Expr::Negate(Box::new(Expr::Int(2))) => vec![Instr::Load(0, 2), Instr::Load(1, -1), Instr::Multiply(0, 1, 0)])
+        compile_eq!(Expr::Negate(Box::new(Expr::Int(2))) => vec![Load(0, 2), Load(1, -1), Multiply(0, 1, 0)])
     }
 
     #[test]
     fn compile_binop() {
-        compile_eq!(Expr::Add(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Add(0, 1, 0) ]);
-        compile_eq!(Expr::Sub(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Subtract(0, 1, 0) ]);
-        compile_eq!(Expr::Mul(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Multiply(0, 1, 0) ]);
-        compile_eq!(Expr::Div(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Divide(0, 1, 0) ]);
-        compile_eq!(Expr::Pow(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Instr::Load(0, 2),Instr::Load(1, 3), Instr::Power(0, 1, 0) ]);
+        compile_eq!(Expr::Add(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Load(0, 2),Load(1, 3), Add(0, 1, 0) ]);
+        compile_eq!(Expr::Sub(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Load(0, 2),Load(1, 3), Subtract(0, 1, 0) ]);
+        compile_eq!(Expr::Mul(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Load(0, 2),Load(1, 3), Multiply(0, 1, 0) ]);
+        compile_eq!(Expr::Div(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Load(0, 2),Load(1, 3), Divide(0, 1, 0) ]);
+        compile_eq!(Expr::Pow(Box::new(Expr::Int(2)), Box::new(Expr::Int(3))) => vec![Load(0, 2),Load(1, 3), Power(0, 1, 0) ]);
+    }
+
+    #[test]
+    fn compile_nested_binop() {
+        compile_str_eq!("2 + 3 - 2" => vec![Load(0, 2),Load(1, 3), Add(0, 1, 0), Load(1, 2), Subtract(0, 1, 0)]);
+        compile_str_eq!("2 / 3 * 2" => vec![Load(0, 2),Load(1, 3), Divide(0, 1, 0), Load(1, 2), Multiply(0, 1, 0)])
+    }
+
+    #[test]
+    fn compile_nested_precedence_binop() {
+        compile_str_eq!("2 - (3 * 2)" => vec![Load(0, 2), Load(1, 3), Load(2, 2), Multiply(1, 2, 1), Subtract(0, 1, 0)])
     }
 }

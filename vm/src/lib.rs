@@ -27,7 +27,7 @@ impl Default for VM {
 }
 
 impl VM {
-    fn with_program(program: Vec<u8>) -> VM {
+    pub fn with_program(program: Vec<u8>) -> VM {
         VM {
             program,
             ..Default::default()
